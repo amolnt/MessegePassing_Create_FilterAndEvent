@@ -1,0 +1,25 @@
+<%
+from mod_python import apache,Cookie,util
+try:
+	directory='/home/amol/SE2-17-MsgApp/AppBackend/json_files/'
+	c=Cookie.get_cookies(req)
+	username=c['username'].value
+	fd=open(directory+""+username+".iNotify.json","w+")
+	fd.write(str("{}"))
+	fd.close()
+
+	addCookie = Cookie.Cookie('username',"None")
+	Cookie.add_cookie(req, addCookie)
+	fd=open(directory+""+username+".request.json","w+")
+	fd.write(str("{}"))
+	fd.close()
+
+	fd=open(directory+""+username+".calender.request.json","w+")
+	fd.write(str("{}"))
+	fd.close()
+
+	util.redirect(req,"http://localhost/WebBackend/login.psp")
+except KeyError,e:
+	util.redirect(req,"http://localhost/WebBackend/login.psp")
+#end
+%>

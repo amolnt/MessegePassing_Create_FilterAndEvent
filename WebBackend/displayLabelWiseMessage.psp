@@ -1,0 +1,283 @@
+<%
+import sqlite3
+import time
+import ast
+from mod_python import apache,Cookie,util
+
+directory='/home/amol/SE2-17-MsgApp/AppBackend/json_files/'
+label=str(form.getfirst('label'))
+Msg=""
+ulLi=""
+try:
+    os.remove(directory+".request.json")
+except Exception:
+    pass
+try:
+    c=Cookie.get_cookies(req)
+    username=c['username'].value
+    if str(username)=="None":
+        util.redirect(req,"http://localhost/WebBackend/login.psp")
+    else:
+        if len(label)!=0 and label!="None":
+            jsondata="{\"labelsMsg\":{\"user\":\""+username+"\",\"label\":\""+label+"\"}}"
+            flagCookie=Cookie.Cookie("requestFlag","True")
+            Cookie.add_cookie(req,flagCookie)
+            usernameCookie=Cookie.Cookie("username",username)
+            Cookie.add_cookie(req,usernameCookie)
+            fdRequest=open(directory+""+username+".request.json","w+")
+            fdRequest.write(str(jsondata))
+            fdRequest.close()
+
+
+        jsondata="{\"getallLabels\":{\"user\":\""+username+"\"}}"
+        flagCookie=Cookie.Cookie("requestFlag","True")
+        Cookie.add_cookie(req,flagCookie)
+        usernameCookie=Cookie.Cookie("username",username)
+        Cookie.add_cookie(req,usernameCookie)
+        fdRequest=open(directory+""+username+".iNotify.json","w+")
+        fdRequest.write(str(jsondata))
+        fdRequest.close()
+        labelList=[]
+        try:
+            listfiles=os.listdir(directory)
+            for files in listfiles:
+                if files==str(c['username'].value)+".labels.csv":
+                    with open(directory+""+username+".labels.csv", "r") as f:
+                            for line in f:
+                                labelList=ast.literal_eval(line)
+                                ulLi+="<ul class='roman' onclick='getLabel(event);'>"
+                                for ls in labelList:
+                                    if type(ls) is tuple and len(ls)==2:
+                                        ulLi+="<li id='"+ls[0]+"'>"+ls[0]
+                                        
+                                        for ll in ls:
+                                            if type(ll) is list:
+                                                ulLi+="<ul class='square'>"
+                                                for l in ll:
+                                                    try:
+                                                        if type(l[1]) is list:
+                                                            ulLi+="<li id='"+l[0]+"'>"+l[0]+"<ul class='square'>"
+                                                            for l1 in l[1]:
+                                                                if type(l1) is tuple and len(l1)==2:
+                                                                    ulLi+="<li id='"+l1[0]+"'>"+l1[0]+"<ul class='square'>"
+                                                                    for l2 in l1[1]:
+                                                                        ulLi+="<li id='"+l2+"'>"+l2+"</li>"
+                                                                    ulLi+="</ul></li>"
+                                                                else:
+                                                                    ulLi+="<li id='"+l1+"'>"+l1+"</li>"
+                                                            ulLi+="</ul></li>"
+                                                        else:
+                                                            ulLi+="<li id='"+l+"'>"+l+"</li>"
+                                                    except IndexError:
+                                                        pass
+                                        
+                                        ulLi+="</li>"
+                                    else:
+                                        ulLi+="<li id='"+ls+"'><a>"+ls+"</a></li>"
+                                ulLi+="</ul>"
+                    #fd=open(directory+""+username+".iNotify.json","w+")
+                    #fd.write(str("{}"))
+                    #fd.close()
+        except ValueError:
+            pass
+except KeyError,e:
+    util.redirect(req,"http://localhost/WebBackend/login.psp")
+#end
+%>
+    
+<!DOCTYPE html>
+<html>
+<head>
+<title>inbox</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" type="text/css" href="./css/style.css" media="none" onload="if(media!='all')media='all'"/>
+    <link rel="stylesheet" type="text/css" href="./css/demo.css" media="none" onload="if(media!='all')media='all'" />
+    <script src="./js/jquery.min.js"></script>
+    <script>
+$(document).ready(function(){
+    function update() {
+    location.reload();
+    }
+});
+</script>
+<style>
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even){background-color: #f2f2f2}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+</style>
+<style rel="stylesheet" type="text/css">
+.roman {
+list-style-type: circle;
+
+}
+
+.square {
+list-style-type: circle;
+margin-left: 2em;
+}
+</style>
+<script>
+function getLabel(event)
+{
+    values=event.target.id;
+    document.getElementById("txtLabelName").setAttribute("value", values);
+}
+
+</script>
+</head>
+<!--body style="width:96%;max-height:10%"-->
+<div class="container">
+            <div class="designweb-top">
+                <span class="right">
+                    <a href="http://localhost/WebBackend/logout.psp">
+                        <strong>Log out</strong>
+                    </a>
+                </span>
+                <span class="right">
+                    <a href="http://localhost/WebBackend/main.psp">
+                        <strong id="strmain">welcome <%= username %></strong>
+                    </a>
+                </span>
+                <span class="left">
+                    <a href="http://localhost/WebBackend/main.psp">
+                        <strong>SendMsg</strong>
+                    </a>
+                </span>
+                <span class="left">
+                    <a href="http://localhost/WebBackend/label.psp">
+                        <strong>create label</strong>
+                    </a>
+                </span>
+                <span class="left">
+                    <a href="http://localhost/WebBackend/inbox.psp">
+                        <strong>inbox</strong>
+                    </a>
+                </span>
+                <div class="clr"></div>
+            </div>
+            <header>
+            </header>
+            <p id="prgf" style="padding-left:33%;color:#00529B;"><%= Msg %></p>
+        <form id="contactform">
+        <div  class=" form" style="width:100%;heigth:100%;">
+        <div style="width:40%;max-height:200px;overflow-y:scroll;" class="tree">
+            <%= ulLi %>
+        </div>
+            <br>
+            <input style="width:23%;" name="label" type="text" id="txtLabelName" placeholder="label Name" style="width:85%;">
+            <input id="btn" class="buttom" name="getLabelMsg" id="btnGetLabelMsg" tabindex="5" value="getLabelMsg" type="submit" formnovalidate>
+            <input id="btn" class="buttom" name="getLabelMsg" id="btnGetLabelMsg" tabindex="5" value="reload" type="submit" formnovalidate>
+           <div style="width:96%;margin-top:0%;">
+                <table>
+                <thead>
+                    <th></th>
+                    <th hidden>ID</th>
+                    <th>User From</th>
+                    <th>User To</th>
+                    <th>Message</th>
+                    <th>label</th>
+                    <th>label1</th>
+                    <th>sending Time</th>
+                    <th>View Msg</th>
+                </thead>
+                </table>
+            <div id="divRcrd" style="max-height:250px;overflow-y:scroll;">
+                <table>
+                <tbody id="tbyInbox">
+                </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+      </form>
+    <script type="text/javascript">
+    
+    var string="";
+    var file="../AppBackend/json_files/"+(($('#strmain').text()).split(" "))[1]+".labelMsg.csv";
+    var rawFile = new XMLHttpRequest();
+    rawFile.open("GET", file, true);
+    count=1;
+    rawFile.onreadystatechange = function ()
+    {
+        var allText = rawFile.responseText;
+        if(allText.length!=0){
+            var text=allText.split("\n");
+            var i=0;
+            if(count==1){
+            for(i=0;i<(text.length)-1;i++)
+            {
+                rcrd=text[i].split(",");
+                string="<tr id=\"tr"+i.toString()+"\">\n"+"<td>"+"<input type=\"checkbox\" name=\"check[]\" value=\"ch"+i.toString()+"\" hidden></td>\n";
+                for(var j=0;j<rcrd.length;j++){
+                    if(j==0){
+                        string+="<td id=\"td"+j.toString()+"\" hidden>"+rcrd[j]+"</td>\n";
+                    }
+                    else if(j==rcrd.length-1){
+                        string+="<td id=\"td"+j.toString()+"\"><input id=\"btn\" class=\"buttom\" name=\"send\" id=\"submit\" tabindex=\"5\" value=\"view\" type=\"submit\"></td>";
+                    }
+                    else{
+                        string+="<td id=\"td"+j.toString()+"\">"+rcrd[j]+"</td>\n";
+                    }
+                }
+                string+="</tr>";
+                $('#tbyInbox').append(string);
+            }
+            }
+            count+=1;  
+        }      
+    }
+
+    rawFile.send(null);
+    function labelOperation(){
+    var checkedCheckboxesValues = 
+        $('input:checkbox[name="check[]"]:checked')
+            .map(function() {
+                return $(this).val();
+        }).get();
+        if(checkedCheckboxesValues.length>0){
+            var array = [];
+            $('input:checkbox[name="check[]"]:checked').each(function() {
+                array.push($(this).val());
+            });
+            //alert($("#"+"tr2").text());
+            $('#lblAdd').show();
+        }
+    }
+    function check(chk){
+        if(document.getElementById("chkSuperLabel").checked===true){
+            $('#sltSuperLabel').show();
+            $('#txtSuperLabel').show();
+        }
+        else{
+            $('#sltSuperLabel').hide();
+            $('#txtSuperLabel').hide();
+        }
+           
+    }
+    var height = 50000;
+    $('#divRcrd').each(function(i, value){
+        height += parseInt($(this).height());
+    });
+
+    height += '';
+
+    $('#divRcrd').animate({scrollTop: height});
+
+    </script>
+    </body>
+</html>

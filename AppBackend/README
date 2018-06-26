@@ -1,0 +1,24 @@
+we are write 3 programs
+fileWatcher:
+	in file watcher we have handle such conditions
+	conditions:
+		1)to handle same file name with diffrent priority
+		     only insert heighest priority file
+		2)to renaming a file
+		     in renaming to update a priority
+		
+fileCompressor:
+	in file compressor to get currently file comes in tempdb.db and to get the file comrress it.
+	then copress file insert in temdb-tgz-md5
+
+fileValidator:
+	in file validator to get currently file comes in tempdb.db.then get the file data and insert into tempdb-json.db databse.
+	we are validate records in sqlite at table creation time.
+	we are try to handle if record is correct insert it into the tempdb-json.db and update that validation result insert it into tempdb.tgz-md5.db database.
+	only problem in phone numbers insert in the database.
+
+
+to run three program at a time:
+   $make run
+to clean database
+   $make clean

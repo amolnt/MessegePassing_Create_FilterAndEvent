@@ -1,0 +1,122 @@
+<%
+import re
+import sqlite3
+import os
+import json
+from mod_python import apache,Cookie,util
+import time
+
+Msg=""
+directory='/home/amol/SE2-17-MsgApp/AppBackend/json_files/'
+username=str(form.getfirst('username'))
+password=str(form.getfirst('password'))
+
+try:
+    os.remove(directory+".request.json")
+except Exception:
+    pass
+
+if username!="None":
+    jsondata="{\"login\":{\"username\":\""+username+"\",\"password\":\""+password+"\"}}"
+    flagCookie=Cookie.Cookie("requestFlag","True")
+    Cookie.add_cookie(req,flagCookie)
+    usernameCookie=Cookie.Cookie("username",username)
+    Cookie.add_cookie(req,usernameCookie)
+
+    fdRequest=open(directory+""+username+".request.json","w+")
+    fdRequest.write(str(jsondata))
+    fdRequest.close()
+    Msg="loading process"
+
+
+try:
+    values=Cookie.get_cookies(req)
+    reqFlag=values['requestFlag'].value
+    username=values['username'].value
+    fflag=True
+    redirectFlag=False
+    if str(reqFlag)=="True":
+        listFile=os.listdir(directory)
+        for list in listFile:
+            if str(list)== username+".response.txt":
+                fd=open(directory+""+username+".response.txt","r")  
+                result=fd.read()
+                if str(result)=="0":
+                    Msg="Username or Password Incorrect"
+                else:
+                    redirectFlag=True
+                fd.close()
+                #os.remove(directory+""+username+".response.txt")
+                os.system("rm "+directory+""+username+".response.txt")
+                fd=open(directory+""+username+".request.json","w+")
+                fd.write(str("{}"))
+                fd.close()
+                fflag=True
+                flagCookie=Cookie.Cookie("requestFlag","")
+                Cookie.add_cookie(req,flagCookie)
+                if redirectFlag==True:
+                    redirectFlag=False
+                    usernameCookie=Cookie.Cookie("username",username)
+                    Cookie.add_cookie(req,usernameCookie)
+                    util.redirect(req,"http://localhost/WebBackend/main.psp")
+                break
+            else:
+                fflag=False
+except KeyError,e:
+    pass
+#end if
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Log in</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" type="text/css" href="./css/style.css"  media="none" onload="if(media!='all')media='all'"/>
+    <link rel="stylesheet" type="text/css" href="./css/demo.css" media="none" onload="if(media!='all')media='all'"/>
+    <script src="./js/jquery.min.js"></script>
+      <script>
+$(document).ready(function(){
+    function update() {
+    location.reload();
+}
+
+});
+</script>
+<script>
+  function preventBack(){window.history.forward();}
+  setTimeout("preventBack()", 0);
+  window.onunload=function(){null};
+</script>
+</head>
+<body>
+<div class="container">
+            <div class="designweb-top">
+                <span class="right">
+                    <a href="http://localhost/WebBackend/signup.psp">
+                        <strong>sign up</strong>
+                    </a>
+                </span>
+                <div class="clr"></div>
+            </div>
+			<header>
+				<h1>SIGN IN</h1>
+            </header>     
+            <p id="prgf" style="padding-left:33%;color:#00529B;"><%= Msg %></p> 
+      <div  class="form">
+    		<form id="contactform"> 
+    			<p class="contact"><label for="username">User Name</label></p> 
+    			<input id="name" name="username" placeholder="User name" required="" tabindex="1" type="text"> 
+    			 
+    			<p class="contact"><label for="password">Password</label></p> 
+    			<input id="password" name="password" placeholder="password" required="" tabindex="1" type="password">
+
+            <input id="btn" class="buttom" name="submit" id="submit" tabindex="5" value="Log in" type="submit"> 	
+            <input id="btn" class="buttom" name="updateResponse" id="updateResponse" tabindex="5" value="updateResponse" type="submit" onclick="update()" formnovalidate> 
+   </form> 
+</div>      
+</div>
+</body>
+</html>

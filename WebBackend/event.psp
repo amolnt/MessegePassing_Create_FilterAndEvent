@@ -1,0 +1,439 @@
+<%
+import sqlite3
+import time
+from mod_python import apache,Cookie,util
+
+directory='/home/amol/SE2-17-MsgApp/AppBackend/json_files/'
+Msg=""
+tb=""
+try:
+    os.remove(directory+".request.json")
+except Exception:
+    pass
+try:
+    c=Cookie.get_cookies(req)
+    username=c['username'].value
+    if str(username)=="None":
+        util.redirect(req,"http://localhost/WebBackend/login.psp")
+    else:
+    	eventName=str(form.getfirst('eventName'))
+    	location=str(form.getfirst('location'))
+    	date=str(form.getfirst('date'))
+        date=date.split("/")
+        date=str("-".join(date))
+    	users=str(form.getfirst('users'))
+        discription=str(form.getfirst('discription'))
+
+
+    	jsondata="{\"getusers\":{\"user\":\""+username+"\"}}"
+    	flagCookie=Cookie.Cookie("requestFlag","True")
+    	Cookie.add_cookie(req,flagCookie)
+    	usernameCookie=Cookie.Cookie("username",username)
+    	Cookie.add_cookie(req,usernameCookie)
+    	fdRequest=open(directory+""+username+".iNotify.json","w+")
+    	fdRequest.write(str(jsondata))
+    	fdRequest.close()
+        flag=False
+        useroption=""
+        try:
+        	while(flag!=True):
+        		listfiles=os.listdir(directory)
+        		for files in listfiles:
+        			if files==str(c['username'].value)+".users.csv":
+        				with open(directory+""+username+".users.csv", "r") as f:
+  							for line in f:
+  								if(line!=username):
+  									useroption+="<option value='"+str(line.rstrip())+"'>"+str(line.rstrip())+"</option>"
+        				#fd=open(directory+""+username+".iNotify.json","w+")
+        				#fd.write(str("{}"))
+        				#fd.close()
+        				flag=True
+        except ValueError:
+        	pass
+        flag=False
+        Msg=users
+        if len(str(eventName))!=4 and len(str(eventName))!=0:
+            jsondata="{\"event\":{\"user\":\""+username+"\",\"eventName\":\""+eventName+"\",\"location\":\""+location+"\",\"date\":\""+date+"\",\"discription\":\""+discription+"\",\"users\":\""+users+"\"}}"
+            flagCookie=Cookie.Cookie("requestFlag","True")
+            Cookie.add_cookie(req,flagCookie)
+            usernameCookie=Cookie.Cookie("username",username)
+            Cookie.add_cookie(req,usernameCookie)
+            fdRequest=open(directory+""+username+".createDeleteUpdateEvent.request.json","w+")
+            fdRequest.write(str(jsondata))
+            fdRequest.close()
+            Msg="loading process"
+            try:
+                while flag!=True:
+                    listfiles=os.listdir(directory)
+                    for files in listfiles:
+                        if files==str(c['username'].value)+".calender.response.txt":
+                            fd=open(directory+""+username+".calender.response.txt","r")
+                            result=fd.read()
+                            if str(result)=="1":
+                                Msg="event stored"
+                            else:
+                                Msg="event not stord"
+                            fd.close()
+                            fd=open(directory+""+username+".createDeleteUpdateEvent.request.json","w+")
+                            fd.write(str("{}"))
+                            fd.close()
+                            flag=True
+            except ValueError:
+        	   pass
+        def getEvents(username):
+            tb=""
+            jsondata="{\"getAllEvents\":{\"user\":\""+username+"\"}}"
+            fdRequest=open(directory+""+username+".calender.request.json","w+")
+            fdRequest.write(str(jsondata))
+            fdRequest.close()
+            flag=False
+            count=1
+            try:
+                while flag!=True:
+                    listfiles=os.listdir(directory)
+                    for files in listfiles:
+                        if files==str(c['username'].value)+".calender.response.csv":
+                            with open(directory+""+str(c['username'].value)+".calender.response.csv","r") as f:
+                                for line in f:
+                                    line=line.split("~")
+                                    tb+="<tr id=\"row"+str(count)+"\">"
+                                    tb+="<td id=\"eventid"+str(count)+"\" hidden>"+line[0]+"</td>\n"
+                                    tb+="<td id=\"userName"+str(count)+"\">"+line[1]+"</td>\n"
+                                    tb+="<td id=\"eventName"+str(count)+"\">"+line[2]+"</td>\n"
+                                    tb+="<td id=\"location"+str(count)+"\">"+line[3]+"</td>\n"
+                                    tb+="<td id=\"datetime"+str(count)+"\">"+line[4]+"</td>\n"
+                                    tb+="<td id=\"discription"+str(count)+"\">"+line[5]+"</td>\n"
+                                    tb+="<td id=\"invitedUsers"+str(count)+"\">"+line[6]+"</td>\n"
+                                    tb+="<td>"
+                                    tb+="<input type=\"button\" id=\"edit_button"+str(count)+"\" value=\"Edit\" class=\"edit\" onclick=\"edit_row('"+str(count)+"')\" formnovalidate><vr>"
+                                    tb+="<input type=\"submit\" class=\"button\" id=\"save_button"+str(count)+"\" value=\"Save\" class=\"save\" onclick=\"save_row('"+str(count)+"')\" hidden formnovalidate><vr>"
+                                    tb+="<input type=\"submit\" class=\"submit\" value=\"Delete\" class=\"delete\" onclick=\"delete_row('"+str(count)+"')\" formnovalidate   > <vr>"
+                                    tb+="</td></tr>\n"
+                                    count=count+1
+                            #fd=open(directory+""+username+".calender.request.json","w+")
+                            #fd.write(str("{}"))
+                            #fd.close()
+                            flag=True
+                            break
+                return tb
+            except ValueError:
+                pass
+        tb=getEvents(username)
+
+        delete=form.getfirst('delete')
+        update=form.getfirst('update')
+
+        if len(str(delete))!=4 and len(str(delete))!=0 and len(str(delete))!=8:
+            jsondata="{\"deleteEvent\":{\"user\":\""+username+"\",\"eventid\":\""+delete+"\"}}"
+            fdRequest=open(directory+""+username+".createDeleteUpdateEvent.request.json","w+")
+            fdRequest.write(str(jsondata))
+            fdRequest.close()
+            flag=False
+            try:
+                while flag!=True:
+                    listfiles=os.listdir(directory)
+                    for files in listfiles:
+                        if files==str(c['username'].value)+".calender.response.csv":
+                            try:
+                                fd=open(directory+""+str(c['username'].value)+".calender.response.txt","r")
+                                result=fd.read()
+                                fd.close()
+                                if str(result)=="1":
+                                    Msg="event deleted"
+                                    tb=getEvents(username)
+                                else:
+                                    Msg="event not deleted"
+                                fd=open(directory+""+username+".createDeleteUpdateEvent.request.json","w+")
+                                fd.write(str("{}"))
+                                fd.close()
+                                flag=True
+                                break
+                            except IOError:
+                                pass    
+            except ValueError:
+                pass
+        elif len(str(update))!=4 and len(str(update))!=0 and len(str(update))!=8:
+            update=update.split("~")
+            jsondata="{\"updateEvent\":{\"user\":\""+username+"\",\"eventid\":\""+update[0]+"\",\"eventName\":\""+update[2]+"\",\"location\":\""+update[3]+"\",\"date\":\""+update[4]+"\",\"discription\":\""+update[5]+"\",\"users\":\""+update[6]+"\"}}"
+    
+            fdRequest=open(directory+""+username+".createDeleteUpdateEvent.request.json","w+")
+            fdRequest.write(str(jsondata))
+            fdRequest.close()
+            flag=False
+            try:
+                while flag!=True:
+                    listfiles=os.listdir(directory)
+                    for files in listfiles:
+                        if files==str(c['username'].value)+".calender.response.csv":
+                            try:
+                                fd=open(directory+""+str(c['username'].value)+".calender.response.txt","r")
+                                result=fd.read()
+                                fd.close()
+                                if str(result)=="1":
+                                    Msg="event updated"
+                                    tb=getEvents(username)
+                                else:
+                                    Msg="event not updated"
+                                fd=open(directory+""+username+".createDeleteUpdateEvent.request.json","w+")
+                                fd.write(str("{}"))
+                                fd.close()
+                                flag=True
+                                break
+                            except IOError:
+                                pass    
+            except ValueError:
+                pass
+        if str(Msg)=="None":
+            Msg=""
+except KeyError,e:
+    util.redirect(req,"http://localhost/WebBackend/login.psp")
+#end
+%>
+    
+<!DOCTYPE html>
+<html>
+<head>
+<title>events</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" type="text/css" href="./css/style.css" media="none" onload="if(media!='all')media='all'"/>
+    <link rel="stylesheet" type="text/css" href="./css/demo.css" media="none" onload="if(media!='all')media='all'" />
+    <script src="./js/jquery.min.js"></script>
+
+
+    <link rel="stylesheet" type="text/css" href="./css/jquery.datetimepicker.css"/ >
+    <script src="./js/jquery.js"></script>
+    <script src="./js/jquery.datetimepicker.full.js"></script>
+
+    <script>
+    $('#txtDelete').val("");
+    $('#txtUpdate').val("");
+$(document).ready(function(){
+    function update() {
+    location.reload();
+    }
+});
+</script>
+<style>
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px;
+}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+</style>
+</head>
+<!--body style="width:96%;max-height:10%"-->
+<div class="container">
+            <div class="designweb-top">
+                <span class="right">
+                    <a href="http://localhost/WebBackend/logout.psp">
+                        <strong>Log out</strong>
+                    </a>
+                </span>
+                <span class="right">
+                    <a href="http://localhost/WebBackend/main.psp">
+                        <strong id="strmain">welcome <%= username %></strong>
+                    </a>
+                </span>
+                <span class="left">
+                    <a href="http://localhost/WebBackend/main.psp">
+                        <strong>SendMsg</strong>
+                    </a>
+                </span>
+                <span class="left">
+                    <a href="http://localhost/WebBackend/inbox.psp">
+                        <strong>inbox</strong>
+                    </a>
+                </span>
+                <span class="left">
+                    <a href="http://localhost/WebBackend/upcomingEvent.psp">
+                        <strong>upcomingEvent</strong>
+                    </a>
+                </span>
+                <span class="left">
+                    <a href="http://localhost/WebBackend/pastEvent.psp">
+                        <strong>pastEvent</strong>
+                    </a>
+                </span>
+                <div class="clr"></div>
+            </div>
+            <header>
+                
+            </header>     
+                <p id="prgf" style="padding-left:33%;color:#00529B;"><%= Msg %></p> 
+                <input id="btn" class="buttom" name="updateResponse" id="updateResponse" tabindex="5" value="updateResponse" type="submit" onclick="window.location.reload()"> 
+        <div  class=" form" style="width:95%;heigth:100%;">
+            <div id="lblAdd">
+            <form id="contactform">
+                <br>
+            <div style="margin-left:30%;">
+            <input type="radio" name="event" value="createEvent" checked> createEvent
+            <input type="radio" name="event" value="deleteUpdateEvent"> deleteUpdateEvent
+            </div>
+            <div id="divCreate" style="margin-left:30%;">
+                <p class="contact"><label for="labelusers"> invite friends</label></p>
+                <select id="sltUsers" style="width:26%; height:30%;" onchange="getMultipleUsers(this.value)" multiple >
+                	<%=  useroption %>
+                </select><br><br>
+
+                <input style="width:23%;" name="users" type="text" id="txtUsers" style="width:85%;" hidden>
+
+                <p class="contact"><label for="labelName"> Enter Event Name</label></p>
+                <input style="width:23%;" name="eventName" type="text" id="txtLabelName" placeholder="enter the Event Name" style="width:85%;" required><br>
+
+                <p class="contact"><label for="subject"> location</label></p>
+                <input style="width:23%;" name="location" type="text" id="txtLocation" placeholder="Enter Location" style="width:85%;" ><br>
+
+                <p class="contact"><label for="subject"> date</label></p>
+                <input style="width:23%;" name="date" type="text" id="datetimepicker" placeholder="Enter Location" style="width:85%;" ><br>
+
+                <p class="contact"><label for="subject"> discription</label></p>
+                <textarea style="width:23%;" name="discription" id="txtDiscription" placeholder="Enter event discription" style="width:85%;" ></textarea><br>
+
+                <input type="text" style="width:23%;" name="parentLabel" id="txtSuperLabel" style="width:85%;" placeholder="Super label" readonly hidden><br>
+                <input id="btn" class="buttom" name="create" id="submit" tabindex="5" value="create" type="submit">
+                <input id="btn" class="buttom" name="updateResponse" id="updateResponse" tabindex="5" value="updateResponse" type="submit" onclick="update()" formnovalidate>
+
+            </div>
+            <div id="divDeleteUpdate" style="margin-left:-2%;" hidden>
+                <table  cellspacing=2 cellpadding=5 id="data_table" border=1>
+                <thead>
+                    <th hidden>eventid</th>
+                    <th>userName</th>
+                    <th>eventName</th>
+                    <th>location</th>
+                    <th>datetime</th>
+                    <th>discription</th>
+                    <th>invitedUsers</th>
+                </thead>
+                <tbody>
+                <%= tb %>
+                </tbody>
+                </table>
+                <input style="width:23%;" name="delete" type="text" id="txtDelete" style="width:85%;" hidden>
+                <input style="width:23%;" name="update" type="text" id="txtUpdate" style="width:85%;"hidden>
+            </div>
+            </form>
+            </div>
+        </div>
+    <script type="text/javascript">
+    $('#datetimepicker').datetimepicker();
+
+    function getMultipleUsers(value){
+        $('#txtUsers').val($('#sltUsers').val());
+    }
+
+    var users=""
+    $("input[type=\"radio\"]").click(function(){
+        if($('input[name="event"]:checked').val()=="createEvent") {
+            $('#divDeleteUpdate').hide();
+            $('#divCreate').show();
+        }
+        else if($('input[name="event"]:checked').val()=="deleteUpdateEvent"){
+            $('#divDeleteUpdate').show();
+            $('#divCreate').hide();
+        }
+    });
+
+    function edit_row(no)
+    {
+        $('#edit_button'+no).hide();
+        $('#save_button'+no).show();
+
+        var eventid=document.getElementById("eventid"+no);
+        var userName=document.getElementById("userName"+no);
+        var eventName=document.getElementById("eventName"+no);
+        var location=document.getElementById("location"+no);
+        var datetime=document.getElementById("datetime"+no);
+        var discription=document.getElementById("discription"+no);
+        var invitedUsers=document.getElementById("invitedUsers"+no);
+
+        var eventidData=eventid.innerHTML;
+        var userNameData=userName.innerHTML;
+        var eventNameData=eventName.innerHTML;
+        var locationData=location.innerHTML;
+        var datetimeData=datetime.innerHTML;
+        var discriptionData=discription.innerHTML;
+        var invitedUsersData=invitedUsers.innerHTML;
+
+        users=invitedUsersData;
+        eventid.innerHTML="<textarea  rows=3 cols=14 id=\"eventidText"+no+"\" hidden>"+eventidData+"</textarea>"
+        userName.innerHTML="<textarea  rows=3 cols=14 id=\"userNameText"+no+"\">"+userNameData+"</textarea>"
+        eventName.innerHTML="<textarea  rows=3 cols=14 id=\"eventNameText"+no+"\">"+eventNameData+"</textarea>"
+        location.innerHTML="<textarea  rows=3 cols=14 id=\"locationText"+no+"\">"+locationData+"</textarea>"
+        datetime.innerHTML="<textarea  rows=3 cols=14 class=\"datetimepicker\" id=\"datetimeText"+no+"\">"+datetimeData+"</textarea>"
+        discription.innerHTML="<textarea  rows=3 cols=14 id=\"discriptionText"+no+"\">"+discriptionData+"</textarea>"
+        invitedUsers.innerHTML="<select id=\"invitedUsersText"+no+"\" style=\"width:80%; height:30%;\" multiple></select>"
+        var op=document.getElementById("invitedUsersText"+no);
+        var x = document.getElementById("sltUsers");
+        var txt = "";
+        var i;
+        for (i = 0; i < x.length; i++) {
+
+            txt = txt + "<option value=\"" + x.options[i].value+"\">"+x.options[i].value+"</option>"
+        }
+        op.innerHTML=txt;
+        $('.datetimepicker').datetimepicker();
+    }
+
+    function save_row(no)
+    {
+        var eventid=document.getElementById("eventidText"+no);
+        var userName=document.getElementById("userNameText"+no);
+        var eventName=document.getElementById("eventNameText"+no);
+        var location=document.getElementById("locationText"+no);
+        var datetime=document.getElementById("datetimeText"+no);
+        var discription=document.getElementById("discriptionText"+no);
+        var invitedUsers=document.getElementById("invitedUsersText"+no);
+
+        document.getElementById("eventid"+no).innerHTML=eventid.value;
+        document.getElementById("userName"+no).innerHTML=userName.value;
+        document.getElementById("eventName"+no).innerHTML=eventName.value;
+        document.getElementById("location"+no).innerHTML=location.value;
+        document.getElementById("datetime"+no).innerHTML=datetime.value;
+        document.getElementById("discription"+no).innerHTML=discription.value;                
+        var datetimeData=(datetime.value).split("/");
+        datetimeData=datetimeData[0]
+
+        $('#edit_button'+no).show();
+        $('#save_button'+no).hide();
+        if((invitedUsers.value).length==0){
+            $('#txtDelete').val("");
+            $('#txtUpdate').val(eventid.value+"~"+userName.value+"~"+eventName.value+"~"+location.value+"~"+datetimeData+"~"+discription.value+"~"+users);
+            document.getElementById("invitedUsers"+no).innerHTML=users;
+        }
+        else{
+            $('#txtDelete').val("");
+            $('#txtUpdate').val(eventid.value+"~"+userName.value+"~"+eventName.value+"~"+location.value+"~"+datetimeData+"~"+discription.value+"~"+$('#invitedUsersText'+no).val())
+            document.getElementById("invitedUsers"+no).innerHTML=$('#invitedUsersText'+no).val();
+        }
+    }
+
+    function delete_row(no)
+    {
+        var eventid=document.getElementById("eventid"+no);
+        var userName=document.getElementById("userName"+no);
+        var eventName=document.getElementById("eventName"+no);
+        var location=document.getElementById("location"+no);
+        var datetime=document.getElementById("datetime"+no);
+        var discription=document.getElementById("discription"+no);
+        var invitedUsers=document.getElementById("invitedUsers"+no);
+        var datetimeData=(datetime.innerHTML).split("/");
+        datetimeData=datetimeData[0]
+
+        $('#txtUpdate').val("");
+        $('#txtDelete').val(eventid.innerHTML);
+    }
+    </script>
+    </body>
+</html>

@@ -1,0 +1,206 @@
+<%
+import re
+import os
+import time
+from mod_python import Cookie
+directory='/home/amol/SE2-17-MsgApp/AppBackend/json_files/'
+
+try:
+    os.remove(directory+".request.json")
+except Exception:
+    pass
+
+Msg=""
+flag=False
+fname=form.getfirst('fname')
+lname=form.getfirst('lname')
+email=form.getfirst('email')
+username=form.getfirst('username')
+password=form.getfirst('password')
+mobileno=form.getfirst('phone')
+username=form.getfirst('username')
+birthDate=form.getfirst('month')
+gender=form.getfirst('gender') 
+repassword=form.getfirst('repassword')
+birthmonth=form.getfirst('BirthMonth')
+birthday=form.getfirst('BirthDay')
+birthyear=form.getfirst('BirthYear')
+birthdate=str(birthyear)+"-"+str(birthmonth)+"-"+str(birthday)
+
+if str(fname)!="None":
+	if re.match(r'^[A-za-z]+$',str(fname)):
+  		if re.match(r'[A-za-z]+$',str(lname)):
+  			if re.match(r'[A-za-z0-9]+$',str(username)):
+  				if re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@$!%*?&])[A-Za-z\d$@$!%*?&]{8,}',str(password)):
+  					if re.match(r'^\d{10}$',str(mobileno)):
+  						flag=True
+        			else:
+          				Msg="phone number is invalid"
+      			else:
+        			Msg="password valid only (1 Upper,1 Lower,1 Special Symb,Numbers)"
+    		else:
+    			Msg="username only in alphabates and numbers"
+    	else:
+    		Msg="last name only in alphabates"
+    #else:
+    #Msg="first name only in alphabates"
+#end if
+
+if flag==True:
+  if str(password)==str(repassword):
+  	jsondata="""{                                                                              
+ "signup":                                                                                            
+ [               
+   {               
+     "fname": """+"\""+fname+"""",                                                                         "lname": """+"\""+lname+"""",                                                                         "username": """+"\""+username+"""",                                                                   "email": """+"\""+email+"""",                                                                         "password": """+"\""+password+"""",                                                                   "birthdate": """+"\""+birthdate+"""",                                                                 "gender": """+"\""+gender+"""",                                                                       "mobileno": """+"\""+mobileno+""""                                                                    }                                                                                                    
+  ]                  
+}"""
+	flagCookie=Cookie.Cookie("requestFlag","True")
+	Cookie.add_cookie(req,flagCookie)
+	usernameCookie=Cookie.Cookie("username",username)
+	Cookie.add_cookie(req,usernameCookie)
+
+	fdRequest=open(directory+""+username+".request.json","w+")
+	fdRequest.write(str(jsondata))
+	fdRequest.close()
+	Msg="loading process"
+  else:
+  	Msg="password and repassword not match"  		
+
+try:
+	values=Cookie.get_cookies(req)
+	reqFlag=values['requestFlag'].value
+	username=values['username'].value
+	fflag=True
+	if str(reqFlag)=="True":
+		listFile=os.listdir(directory)
+		for list in listFile:
+			if str(list)== username+".response.txt":
+				fd=open(directory+""+username+".response.txt","r")	
+				result=fd.read()
+				if str(result)=="0":
+					Msg="user already exists"
+				else:
+					Msg="user created successfully"
+				fd.close()
+				os.remove(directory+""+username+".response.txt")
+				fd=open(directory+""+username+".request.json","w+")
+				fd.write(str("{}"))
+				fd.close()
+				fflag=True
+				flagCookie=Cookie.Cookie("requestFlag","")
+				Cookie.add_cookie(req,flagCookie)
+				usernameCookie=Cookie.Cookie("username","")
+				Cookie.add_cookie(req,usernameCookie)
+				break
+			else:
+				fflag=False
+except KeyError,e:
+	pass
+#end if
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sign up</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" type="text/css" href="./css/style.css" media="none" onload="if(media!='all')media='all'"/>
+    <link rel="stylesheet" type="text/css" href="./css/demo.css" media="none" onload="if(media!='all')media='all'" />
+    <script src="./js/jquery.min.js"></script>
+
+<script>
+$(document).ready(function(){
+    $("#pgrf").hide();
+    $("#btn").click(function(){
+        $("#prgf").show();
+    });
+});
+
+function update() {
+    location.reload();
+}
+</script>
+<script>
+  function preventBack(){window.history.forward();}
+  setTimeout("preventBack()", 0);
+  window.onunload=function(){null};
+</script>
+</script>
+</head>
+<body>
+<div class="container">
+			<div class="designweb-top">
+                <span class="right">
+                    <a href="http://localhost/WebBackend/login.psp">
+                        <strong>Log in</strong>
+                    </a>
+                </span>
+                <div class="clr"></div>
+            </div>
+			<header>
+				<h1>SIGN UP</h1>
+            </header>   
+            <p id="prgf" style="padding-left:33%;color:#00529B;"><%= Msg %></p>
+            </br>
+      <div  class="form">
+
+    		<form id="contactform" name="signup"> 
+    			<p class="contact"><label for="firstname">First Name</label></p> 
+    			<input id="name" name="fname" placeholder="First name" required="" tabindex="1" type="text"> 
+    			 
+    			<p class="contact"><label for="lastname">Last Name</label></p> 
+    			<input id="lname" name="lname" placeholder="Last name" required="" tabindex="1" type="text">
+
+    			<p class="contact"><label for="email">Email</label></p> 
+    			<input id="email" name="email" placeholder="example@domain.com" required="" type="email"> 
+                
+                <p class="contact"><label for="username">Create a username</label></p> 
+    			<input id="username" name="username" placeholder="username" required="" tabindex="2" type="text"> 
+    			 
+                <p class="contact"><label for="password">Create a password</label></p> 
+    			<input type="password" id="password" name="password" required=""> 
+                <p class="contact"><label for="repassword">Confirm your password</label></p> 
+    			<input type="password" id="repassword" name="repassword" required=""> 
+        
+               <fieldset>
+                 <label>Birthday</label>
+                  <label class="month"> 
+                  <select class="select-style" name="BirthMonth">
+                  <option value="">Month</option>
+                  <option  value="01">January</option>
+                  <option value="02">February</option>
+                  <option value="03" >March</option>
+                  <option value="04">April</option>
+                  <option value="05">May</option>
+                  <option value="06">June</option>
+                  <option value="07">July</option>
+                  <option value="08">August</option>
+                  <option value="09">September</option>
+                  <option value="10">October</option>
+                  <option value="11">November</option>
+                  <option value="12" >December</option>
+                  </label>
+                 </select>    
+                <label>Day<input class="birthday" maxlength="2" name="BirthDay"  placeholder="Day" required=""></label>
+                <label>Year <input class="birthyear" maxlength="4" name="BirthYear" placeholder="Year" required=""></label>
+              </fieldset>
+  			<label>Gender</label>
+            <select class="select-style gender" name="gender">
+            <option value="m">Male</option>
+            <option value="f">Female</option>
+            <option value="others">Other</option>
+            </select><br><br>
+            
+            <p class="contact"><label for="phone">Mobile phone</label></p> 
+            <input id="phone" name="phone" placeholder="phone number" required="" type="text"> <br>
+            <input id="btn" class="buttom" name="submit" id="submit" tabindex="5" value="Sign up" type="submit">
+            <input id="btn" class="buttom" name="updateResponse" id="updateResponse" tabindex="5" value="updateResponse" type="submit" onclick="update()" formnovalidate> 	 
+   </form> 
+</div>      
+</div>
+
+</body>
+</html>

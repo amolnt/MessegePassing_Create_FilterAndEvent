@@ -1,0 +1,148 @@
+<%
+import sqlite3
+import time
+from mod_python import apache,Cookie,util
+
+directory='/home/amol/SE2-17-MsgApp/AppBackend/json_files/'
+td=""
+try:
+    os.remove(directory+".request.json")
+except Exception:
+    pass
+Msg=""
+msg=""
+try:
+    c=Cookie.get_cookies(req)
+    username=c['username'].value
+    if str(username)=="None":
+        util.redirect(req,"http://localhost/WebBackend/login.psp")
+    else:
+        jsondata="{\"past\":{\"user\":\""+username+"\"}}"
+        flagCookie=Cookie.Cookie("requestFlag","True")
+        Cookie.add_cookie(req,flagCookie)
+        usernameCookie=Cookie.Cookie("username",username)
+        Cookie.add_cookie(req,usernameCookie)
+        fdRequest=open(directory+""+username+".calender.request.json","w+")
+        fdRequest.write(str(jsondata))
+        fdRequest.close()
+        flag=False
+        count=1
+        try:
+            while flag!=True:
+                listfiles=os.listdir(directory)
+                for files in listfiles:
+                    if files==str(c['username'].value)+".calender.response.csv":
+                        with open(directory+""+str(c['username'].value)+".calender.response.csv","r") as f:
+                            for line in f:
+                                line=line.split("~")
+                                count=1
+                                td+="<tr>"
+                                for ln in line:
+                                    if count==1:    
+                                        td+="<td id=\"td"+str(ln)+"\" hidden>"+ln+"</td>"
+                                    else:
+                                        td+="<td id=\"td"+str(ln)+"\">"+ln+"</td>"
+                                    count+=1
+                                td+="</tr>"
+                        fd=open(directory+""+username+".calender.request.json","w+")
+                        fd.write(str("{}"))
+                        fd.close()
+                        flag=True
+                        break
+        except ValueError:
+            pass
+except KeyError,e:
+    util.redirect(req,"http://localhost/WebBackend/login.psp")
+#end
+%>
+    
+<!DOCTYPE html>
+<html>
+<head>
+<title>past calender events</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" type="text/css" href="./css/style.css" media="none" onload="if(media!='all')media='all'"/>
+    <link rel="stylesheet" type="text/css" href="./css/demo.css" media="none" onload="if(media!='all')media='all'" />
+    <script src="./js/jquery.min.js"></script>
+    <script>
+    
+$(document).ready(function(){
+    function update() {
+    location.reload();
+    }
+});
+</script>
+<style>
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even){background-color: #f2f2f2}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+</style>
+</head>
+<body style="width:100%;max-height:100%">
+<div class="container">
+            <div class="designweb-top">
+                <span class="right">
+                    <a href="http://localhost/WebBackend/logout.psp">
+                        <strong>Log out</strong>
+                    </a>
+                </span>
+                <span class="right">
+                    <a href="http://localhost/WebBackend/main.psp">
+                        <strong id="strmain">welcome <%= username %></strong>
+                    </a>
+                </span>
+                <span class="left">
+                    <a href="http://localhost/WebBackend/event.psp">
+                        <strong>event</strong>
+                    </a>
+                </span>
+                <div class="clr"></div>
+            </div>
+			<header>
+                
+            </header>     
+                <input id="btn" class="buttom" name="updateResponse" id="updateResponse" tabindex="5" value="updateResponse" type="submit" onclick="window.location.reload()">  
+        <div  class=" form" style="width:100%;height:100%;">
+              <table>
+                <thead>
+                    <th hidden>ID</th>
+                    <th>username</th>
+                    <th >eventname</th>
+                    <th>location</th>
+                    <th>datetime</th>
+                    <th>discription</th>
+                    <th>invited users</th>
+                </thead>
+                <tbody>
+                    <%= td %>
+                </tbody>
+                </table>
+        </div>
+    <script type="text/javascript">
+    var height = 50000;
+	$('#divRcrd').each(function(i, value){
+    	height += parseInt($(this).height());
+	});
+
+	height += '';
+
+	$('#divRcrd').animate({scrollTop: height});
+
+    </script>
+    </body>
+</html>
